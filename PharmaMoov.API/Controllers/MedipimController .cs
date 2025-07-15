@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PharmaMoov.API.Services.Abstractions;
 using PharmaMoov.Models.External.Medipim;
+using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace PharmaMoov.API.Controllers
@@ -35,6 +37,24 @@ namespace PharmaMoov.API.Controllers
 
             var products = await _medipimService.GetProductsAsync(request);
             return Ok(products);
+        }
+
+        [HttpGet("product/{id}")]
+        public async Task<ActionResult<MedipimProductDto>> GetProductById(string id)
+        {
+            try
+            {
+                var product = await _medipimService.GetProductByIdAsync(id);
+                return Ok(product);
+            }
+            catch (HttpRequestException ex)
+            {
+                return StatusCode(502, $"External API error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return NotFound($"Product not found: {ex.Message}");
+            }
         }
     }
 }

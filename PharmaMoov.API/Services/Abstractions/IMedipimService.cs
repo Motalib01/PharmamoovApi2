@@ -15,6 +15,8 @@ namespace PharmaMoov.API.Services.Abstractions
     {
         Task<List<MedipimCategoryDto>> GetPublicCategoriesAsync();
         Task<List<MedipimProductDto>> GetProductsAsync(GetMedipimProductsRequest request);
+        Task<MedipimProductDto> GetProductByIdAsync(string id);
+
     }
 
     public class MedipimService : IMedipimService
@@ -51,7 +53,30 @@ namespace PharmaMoov.API.Services.Abstractions
 
             return result?.Results ?? new List<MedipimCategoryDto>();
         }
+        public async Task<MedipimProductDto> GetProductByIdAsync(string id)
+        {
+            var baseUrl = _configuration["Medipim:BaseUrl"];
+            var apiId = _configuration["Medipim:ApiId"];
+            var apiKey = _configuration["Medipim:ApiKey"];
 
+            var credentials = $"{apiId}:{apiKey}";
+            var base64Creds = Convert.ToBase64String(Encoding.UTF8.GetBytes(credentials));
+
+            var url = $"{baseUrl}/v4/products/find?id={id}";
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", base64Creds);
+
+            var response = await _httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var wrapper = JsonConvert.DeserializeObject<FindProductResponse>(json);
+
+            return wrapper?.Product ?? throw new Exception("Product not found");
+        }
+
+        
         public async Task<List<MedipimProductDto>> GetProductsAsync(GetMedipimProductsRequest request)
         {
             var baseUrl = _configuration["Medipim:BaseUrl"];
@@ -108,6 +133,11 @@ namespace PharmaMoov.API.Services.Abstractions
         {
             [JsonProperty("results")]
             public List<MedipimCategoryDto> Results { get; set; }
+        }
+        private class FindProductResponse
+        {
+            [JsonProperty("product")]
+            public MedipimProductDto Product { get; set; }
         }
     }
 }
