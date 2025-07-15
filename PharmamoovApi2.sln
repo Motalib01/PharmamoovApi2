@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113 d17.12
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PharmaMoov.Models", "PharmaMoov.Models\PharmaMoov.Models.csproj", "{3B272269-C669-47EA-B4E9-ECC4A6E4231D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PharmaMoov.API", "PharmaMoov.API\PharmaMoov.API.csproj", "{7464A816-E6EB-4BB1-994F-3FD46E84488D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3B272269-C669-47EA-B4E9-ECC4A6E4231D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B272269-C669-47EA-B4E9-ECC4A6E4231D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B272269-C669-47EA-B4E9-ECC4A6E4231D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B272269-C669-47EA-B4E9-ECC4A6E4231D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7464A816-E6EB-4BB1-994F-3FD46E84488D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7464A816-E6EB-4BB1-994F-3FD46E84488D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7464A816-E6EB-4BB1-994F-3FD46E84488D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7464A816-E6EB-4BB1-994F-3FD46E84488D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

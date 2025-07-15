@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  pharmamoov-mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: pharmamoov
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: "AWSsourire25!"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+  pharmamoov-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pharmamoov-api
+    depends_on:
+      - pharmamoov-mysql
+    ports:
+      - "5000:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      DATA__DataConnStr: "Server=mysql_db;Database=pharmamoov;User ID=admin;Password=AWSsourire25!"
+      PAYMENTCONFIG__CLIENTID: pharmamoovtest
+      PAYMENTCONFIG__APIKEY: rWBV2tbSrY3xjEdikSR70eANEhzHKq71ge83QxujVrY7J50w1z
+      PAYMENTCONFIG__CREDITEDID: ""
+      PAYMENTCONFIG__WALLETID: ""
+      PAYMENTCONFIG__BASEURL: https://api.sandbox.mangopay.com
+      PAYMENTCONFIG__SANDBOXREFERENCE: https://api.sandbox.mangopay.com
+      PAYMENTCONFIG__PRODUCTIONREFERENCE: https://api.mangopay.com
+      PAYMENTCONFIG__PAYMENTRETURNURL: https://pharmamoov.fr/home/PaymentWaiting/
+      PAYMENTCONFIG__WEBRETURLURL: https://pharmamoov.fr/home/PaymentWaitingWeb/
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
