@@ -23,5 +23,18 @@ namespace PharmaMoov.API.Controllers
             var categories = await _medipimService.GetPublicCategoriesAsync();
             return Ok(categories);
         }
+
+        [HttpGet("products")]
+        public async Task<IActionResult> GetAllProducts([FromQuery] int page = 0, [FromQuery] int size = 100)
+        {
+            var request = new GetMedipimProductsRequest
+            {
+                Page = page,
+                PageSize = size
+            };
+
+            var products = await _medipimService.GetProductsAsync(request);
+            return Ok(products);
+        }
     }
 }
