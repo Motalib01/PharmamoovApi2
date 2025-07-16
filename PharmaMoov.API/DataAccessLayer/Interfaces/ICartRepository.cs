@@ -1,8 +1,9 @@
-﻿using PharmaMoov.Models;
-using PharmaMoov.API.Helpers;
-using System;
-using PharmaMoov.Models.Orders;
+﻿using PharmaMoov.API.Helpers;
+using PharmaMoov.Models;
 using PharmaMoov.Models.Cart;
+using PharmaMoov.Models.External.Medipim;
+using PharmaMoov.Models.Orders;
+using System;
 
 namespace PharmaMoov.API.DataAccessLayer.Interfaces
 {
@@ -14,5 +15,7 @@ namespace PharmaMoov.API.DataAccessLayer.Interfaces
         APIResponse ValidateCartItems(Guid _shop, int _address, OrderDeliveryType _dType);
         APIResponse SyncCartItemForHealthProfessional(CartSyncForHealthProfessional CartSyncItems);
         APIResponse CheckoutCartItemsViaDirectCardPayIn(string Auth, CheckoutCartItem UserOrder, string cardId, string accessType);
+        
+
     }
 }

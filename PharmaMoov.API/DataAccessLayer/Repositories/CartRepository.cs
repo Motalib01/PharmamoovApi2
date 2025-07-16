@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using PharmaMoov.Models.Orders;
 using PharmaMoov.Models.Cart;
 using PharmaMoov.Models.Shop;
@@ -19,6 +20,8 @@ using MangoPay.SDK.Entities.GET;
 using MangoPay.SDK.Entities.POST;
 using MangoPay.SDK;
 using MangoPay.SDK.Entities;
+using PharmaMoov.API.Services.Abstractions;
+using PharmaMoov.Models.External.Medipim;
 
 namespace PharmaMoov.API.DataAccessLayer.Repositories
 {
@@ -28,13 +31,14 @@ namespace PharmaMoov.API.DataAccessLayer.Repositories
         private APIConfigurationManager APIConfig { get; set; }
         ILoggerManager LogManager { get; }
         private readonly LocalizationService localization;
-        private IHttpContextAccessor accessor;        
+        private IHttpContextAccessor accessor;
+        private IMedipimService _medipimService;
         private IMainHttpClient MainHttpClient { get; }
 
         IPaymentRepository IPaymentRepo { get; }
         IOrderRepository IOrderRepo { get; }
 
-        public CartRepository(APIDBContext _dbCtxt, IOrderRepository _orderRep, IPaymentRepository _promoRep, ILoggerManager _logManager, APIConfigurationManager _apiCon, IHttpContextAccessor _accessor, LocalizationService _localization, IMainHttpClient _mhttpc)
+        public CartRepository(APIDBContext _dbCtxt, IOrderRepository _orderRep, IPaymentRepository _promoRep, ILoggerManager _logManager, APIConfigurationManager _apiCon, IHttpContextAccessor _accessor, LocalizationService _localization, IMainHttpClient _mhttpc, IMedipimService medipimService)
         {
             DbContext = _dbCtxt;
             LogManager = _logManager;
@@ -42,9 +46,12 @@ namespace PharmaMoov.API.DataAccessLayer.Repositories
             localization = _localization;
             accessor = _accessor;
             MainHttpClient = _mhttpc;
+            _medipimService = medipimService;
             IPaymentRepo = _promoRep;
             IOrderRepo = _orderRep;
         }
+
+        
 
         public APIResponse SyncCartItem(CartSyncDTO CartSyncItems, string Authorization)
         {
@@ -1123,6 +1130,9 @@ namespace PharmaMoov.API.DataAccessLayer.Repositories
             LogManager.LogDebugObject(paymentDetails);
             return paymentDetails;
         }
+
+        
+
 
     }
 }

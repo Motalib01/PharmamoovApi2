@@ -16,5 +16,7 @@ namespace PharmaMoov.Models.Cart
         [Column(TypeName = "decimal(4,1)")]
         public decimal ProductQuantity { get; set; }
         public int PrescriptionRecordId { get; set; }
+        [NotMapped]
+        public string ExternalProductId { get; set; } // TEMPORARY: not stored in DB!
     }
 }
