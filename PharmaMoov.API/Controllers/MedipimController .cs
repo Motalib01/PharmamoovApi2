@@ -1,15 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using PharmaMoov.API.DataAccessLayer;
 using PharmaMoov.API.Services.Abstractions;
 using PharmaMoov.Models;
+using PharmaMoov.Models.Cart;
 using PharmaMoov.Models.External.Medipim;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using PharmaMoov.API.DataAccessLayer;
-using PharmaMoov.Models.Cart;
 
 namespace PharmaMoov.API.Controllers
 {
@@ -61,6 +62,63 @@ namespace PharmaMoov.API.Controllers
                 return NotFound($"Product not found: {ex.Message}");
             }
         }
+
+        [HttpGet("products/limited")]
+        public async Task<IActionResult> GetLimitedProducts()
+        {
+            var request = new GetMedipimProductsRequest
+            {
+                Page = 0,
+                PageSize = 10
+            };
+
+            var products = await _medipimService.GetProductsAsync(request);
+
+            // Return only first 6 manually
+            var limited = products.Take(6).ToList();
+            return Ok(limited);
+        }
+
+        [HttpGet("categories/limited")]
+        public async Task<ActionResult<List<MedipimCategoryDto>>> GetLimitedCategories()
+        {
+            var categories = await _medipimService.GetPublicCategoriesAsync();
+
+            var limitedCategories = categories.Take(8).ToList();
+
+            return Ok(limitedCategories);
+        }
+
+        [HttpGet("products/by-category-fr/{frenchName}")]
+        public async Task<IActionResult> GetProductsByFrenchCategoryName(
+            string frenchName,
+            [FromQuery] int page = 0,
+            [FromQuery] int size = 100)
+        {
+            // 1. Get all categories
+            var categories = await _medipimService.GetPublicCategoriesAsync();
+
+            // 2. Match French name (case-insensitive)
+            var category = categories.FirstOrDefault(c =>
+                c.Name?.ContainsKey("fr") == true &&
+                string.Equals(c.Name["fr"], frenchName, StringComparison.OrdinalIgnoreCase));
+
+            if (category == null)
+                return NotFound(new { Message = $"Category with French name '{frenchName}' not found." });
+
+            // 3. Use category ID to fetch products
+            var request = new GetMedipimProductsRequest
+            {
+                Page = page,
+                PageSize = size,
+                PublicCategoryId = category.Id
+            };
+
+            var products = await _medipimService.GetProductsAsync(request);
+
+            return Ok(products);
+        }
+
 
         [HttpPost("add-medipim-to-cart")]
         public async Task<IActionResult> AddMedipimProductToCart(
