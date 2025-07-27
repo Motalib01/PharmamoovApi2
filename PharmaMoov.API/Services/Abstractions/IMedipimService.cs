@@ -2,6 +2,7 @@
 using PharmaMoov.Models.External.Medipim;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -16,6 +17,7 @@ namespace PharmaMoov.API.Services.Abstractions
         Task<List<MedipimCategoryDto>> GetPublicCategoriesAsync();
         Task<List<MedipimProductDto>> GetProductsAsync(GetMedipimProductsRequest request);
         Task<MedipimProductDto> GetProductByIdAsync(string id);
+        Task<List<MedipimProductDto>> GetProductsByFrenchCategoryAsync(string frenchName, int page = 0, int size = 100);
 
     }
 
@@ -76,7 +78,40 @@ namespace PharmaMoov.API.Services.Abstractions
             return wrapper?.Product ?? throw new Exception("Product not found");
         }
 
-        
+        public async Task<List<MedipimProductDto>> GetProductsByFrenchCategoryAsync(string frenchName, int page = 0, int size = 100)
+        {
+            var categories = await GetPublicCategoriesAsync();
+
+            var category = categories.FirstOrDefault(c =>
+                c.Name?.TryGetValue("fr", out var nameFr) == true &&
+                string.Equals(nameFr, frenchName, StringComparison.OrdinalIgnoreCase));
+
+            if (category == null)
+                throw new Exception($"Category with French name '{frenchName}' not found.");
+
+            var filter = new
+            {
+                and = new object[]
+                {
+                    new { status = "active" },
+                    new { hasContent = new { flag = "media", locale = "fr" } },
+                    new { hasContent = new { flag = "descriptions", locale = "fr" } },
+                    new { publicCategoryId = category.Id }
+                }
+            };
+
+            var request = new GetMedipimProductsRequest
+            {
+                Page = page,
+                PageSize = size,
+                Filter = filter
+            };
+
+            var products = await GetProductsAsync(request);
+
+            return products;
+        }
+
         public async Task<List<MedipimProductDto>> GetProductsAsync(GetMedipimProductsRequest request)
         {
             var baseUrl = _configuration["Medipim:BaseUrl"];

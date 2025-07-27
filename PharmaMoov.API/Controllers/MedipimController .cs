@@ -89,34 +89,25 @@ namespace PharmaMoov.API.Controllers
             return Ok(limitedCategories);
         }
 
-        [HttpGet("products/by-category-fr/{frenchName}")]
-        public async Task<IActionResult> GetProductsByFrenchCategoryName(
-            string frenchName,
-            [FromQuery] int page = 0,
-            [FromQuery] int size = 100)
+        [HttpGet("products/by-category-fr")]
+        public async Task<IActionResult> GetProductsByCategoryFrName([FromQuery] string categoryFrName)
         {
-            // 1. Get all categories
-            var categories = await _medipimService.GetPublicCategoriesAsync();
-
-            // 2. Match French name (case-insensitive)
-            var category = categories.FirstOrDefault(c =>
-                c.Name?.ContainsKey("fr") == true &&
-                string.Equals(c.Name["fr"], frenchName, StringComparison.OrdinalIgnoreCase));
-
-            if (category == null)
-                return NotFound(new { Message = $"Category with French name '{frenchName}' not found." });
-
-            // 3. Use category ID to fetch products
             var request = new GetMedipimProductsRequest
             {
-                Page = page,
-                PageSize = size,
-                PublicCategoryId = category.Id
+                Page = 0,
+                PageSize = 100
             };
 
             var products = await _medipimService.GetProductsAsync(request);
 
-            return Ok(products);
+            var filtered = products
+                .Where(p => p.PublicCategories != null && p.PublicCategories.Any(c =>
+                    c.Name != null &&
+                    c.Name.TryGetValue("fr", out var nameFr) &&
+                    string.Equals(nameFr, categoryFrName, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+
+            return Ok(filtered);
         }
 
 
