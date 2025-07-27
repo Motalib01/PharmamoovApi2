@@ -19,10 +19,12 @@ namespace PharmaMoov.API.Controllers
     public class MedipimController : ControllerBase
     {
         private readonly IMedipimService _medipimService;
+        private readonly APIDBContext _dbContext;
 
-        public MedipimController(IMedipimService medipimService)
+        public MedipimController(IMedipimService medipimService, APIDBContext dbContext)
         {
             _medipimService = medipimService;
+            _dbContext = dbContext;
         }
 
         [HttpGet("categories")]
@@ -110,55 +112,53 @@ namespace PharmaMoov.API.Controllers
             return Ok(filtered);
         }
 
-
         [HttpPost("add-medipim-to-cart")]
         public async Task<IActionResult> AddMedipimProductToCart(
-            [FromBody] AddMedipimProductToCartRequest request,
-            [FromHeader] string Authorization,
-            [FromServices] IMedipimService medipimService,
-            [FromServices] APIDBContext dbContext)
+        [FromBody] AddMedipimToCartRequest request,
+        [FromHeader] string Authorization)
         {
             var token = Authorization?.Split(' ')[1];
 
-            var userLogin = await dbContext.UserLoginTransactions
+            var userLogin = await _dbContext.UserLoginTransactions
                 .FirstOrDefaultAsync(x => x.Token == token && x.IsActive);
 
             if (userLogin == null)
                 return Unauthorized(new APIResponse { Message = "Unauthorized user" });
 
-            var existingCartItem = await dbContext.CartItems.FirstOrDefaultAsync(x =>
+            var existingCartItem = await _dbContext.CartItems.FirstOrDefaultAsync(x =>
                 x.UserId == userLogin.UserId &&
                 x.ShopId == request.ShopId &&
-                x.ProductRecordId == 0 &&
-                x.ExternalProductId == request.MedipimProductId);
+                x.ExternalProductId == request.MedipimProductId &&
+                x.ProductRecordId == 0);
 
             if (existingCartItem != null)
             {
                 existingCartItem.ProductQuantity += request.Quantity;
                 existingCartItem.LastEditedDate = DateTime.UtcNow;
+                existingCartItem.LastEditedBy = userLogin.UserId;
             }
             else
             {
-                var newCartItem = new CartItem
+                var newItem = new CartItem
                 {
                     ShopId = request.ShopId,
                     UserId = userLogin.UserId,
                     PatientId = request.PatientId,
-                    ProductRecordId = 0, 
+                    ProductRecordId = 0,
+                    ExternalProductId = request.MedipimProductId,
                     ProductQuantity = request.Quantity,
                     PrescriptionRecordId = request.PrescriptionRecordId,
+                    IsEnabled = true,
                     CreatedDate = DateTime.UtcNow,
                     CreatedBy = userLogin.UserId,
-                    IsEnabled = true,
-                    ExternalProductId = request.MedipimProductId, 
                     LastEditedDate = DateTime.UtcNow,
                     LastEditedBy = userLogin.UserId
                 };
 
-                dbContext.CartItems.Add(newCartItem);
+                _dbContext.CartItems.Add(newItem);
             }
 
-            await dbContext.SaveChangesAsync();
+            await _dbContext.SaveChangesAsync();
 
             return Ok(new APIResponse
             {
@@ -168,5 +168,8 @@ namespace PharmaMoov.API.Controllers
             });
         }
 
+
     }
+
+
 }

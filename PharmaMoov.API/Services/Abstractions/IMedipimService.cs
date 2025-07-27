@@ -158,21 +158,32 @@ namespace PharmaMoov.API.Services.Abstractions
             return result?.Results ?? new List<MedipimProductDto>();
         }
 
-        private class MedipimProductsApiResponse
-        {
-            [JsonProperty("results")]
-            public List<MedipimProductDto> Results { get; set; }
-        }
 
-        private class MedipimCategoryResponse
-        {
-            [JsonProperty("results")]
-            public List<MedipimCategoryDto> Results { get; set; }
-        }
-        private class FindProductResponse
-        {
-            [JsonProperty("product")]
-            public MedipimProductDto Product { get; set; }
-        }
+    }
+    public class AddMedipimToCartRequest
+    {
+        public Guid ShopId { get; set; }
+        public string MedipimProductId { get; set; }  
+        public Guid PatientId { get; set; }
+        public int Quantity { get; set; }
+        public int PrescriptionRecordId { get; set; }
+    }
+
+    public class MedipimProductsApiResponse
+    {
+        [JsonProperty("results")]
+        public List<MedipimProductDto> Results { get; set; }
+    }
+
+
+    public class MedipimCategoryResponse
+    {
+        [JsonProperty("results")]
+        public List<MedipimCategoryDto> Results { get; set; }
+    }
+    public class FindProductResponse
+    {
+        [JsonProperty("product")]
+        public MedipimProductDto Product { get; set; }
     }
 }
