@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PharmaMoov.API.DataAccessLayer;
+using PharmaMoov.API.Helpers;
 using PharmaMoov.API.Services.Abstractions;
+using PharmaMoov.API.Services.CartExternal;
 using PharmaMoov.Models;
 using PharmaMoov.Models.Cart;
 using PharmaMoov.Models.External.Medipim;
@@ -113,59 +115,71 @@ namespace PharmaMoov.API.Controllers
         }
 
         [HttpPost("add-medipim-to-cart")]
-        public async Task<IActionResult> AddMedipimProductToCart(
-        [FromBody] AddMedipimToCartRequest request,
-        [FromHeader] string Authorization)
+        public async Task<IActionResult> AddMedipimToCart([FromBody] AddMedipimToCartRequest request)
         {
-            var token = Authorization?.Split(' ')[1];
+            var sessionKey = $"external-cart-{request.PatientId}";
 
-            var userLogin = await _dbContext.UserLoginTransactions
-                .FirstOrDefaultAsync(x => x.Token == token && x.IsActive);
+            var cart = HttpContext.Session.GetObject<List<ExternalCartItem>>(sessionKey) ?? new List<ExternalCartItem>();
 
-            if (userLogin == null)
-                return Unauthorized(new APIResponse { Message = "Unauthorized user" });
-
-            var existingCartItem = await _dbContext.CartItems.FirstOrDefaultAsync(x =>
-                x.UserId == userLogin.UserId &&
-                x.ShopId == request.ShopId &&
-                x.ExternalProductId == request.MedipimProductId &&
-                x.ProductRecordId == 0);
-
-            if (existingCartItem != null)
-            {
-                existingCartItem.ProductQuantity += request.Quantity;
-                existingCartItem.LastEditedDate = DateTime.UtcNow;
-                existingCartItem.LastEditedBy = userLogin.UserId;
-            }
+            var existing = cart.FirstOrDefault(x => x.MedipimProductId == request.MedipimProductId);
+            if (existing != null)
+                existing.Quantity += request.Quantity;
             else
-            {
-                var newItem = new CartItem
+                cart.Add(new ExternalCartItem
                 {
                     ShopId = request.ShopId,
-                    UserId = userLogin.UserId,
+                    MedipimProductId = request.MedipimProductId,
                     PatientId = request.PatientId,
-                    ProductRecordId = 0,
-                    ExternalProductId = request.MedipimProductId,
-                    ProductQuantity = request.Quantity,
                     PrescriptionRecordId = request.PrescriptionRecordId,
-                    IsEnabled = true,
-                    CreatedDate = DateTime.UtcNow,
-                    CreatedBy = userLogin.UserId,
-                    LastEditedDate = DateTime.UtcNow,
-                    LastEditedBy = userLogin.UserId
-                };
+                    Quantity = request.Quantity
+                });
 
-                _dbContext.CartItems.Add(newItem);
+            HttpContext.Session.SetObject(sessionKey, cart);
+            return Ok(new { success = true, count = cart.Count });
+        }
+
+
+        [AllowAnonymous]
+        [HttpGet("GetCombinedCart")]
+        public async Task<IActionResult> GetCombinedCart([FromQuery] Guid patientId)
+        {
+            var sessionKey = $"external-cart-{patientId}";
+            var externalCart = HttpContext.Session.GetObject<List<ExternalCartItem>>(sessionKey) ??
+                               new List<ExternalCartItem>();
+
+            var combined = new List<UserCartItem>();
+
+            foreach (var ext in externalCart)
+            {
+                var medipimProduct = await _medipimService.GetProductByIdAsync(ext.MedipimProductId);
+                var price = medipimProduct.PublicPrice ?? medipimProduct.PharmacistPrice ?? 0;
+                var photo = medipimProduct.Photos?.FirstOrDefault()?.Formats?.GetValueOrDefault("thumbnailWebp");
+
+                combined.Add(new UserCartItem
+                {
+                    ShopId = ext.ShopId,
+                    ShopName = "Medipim External",
+                    ProductRecordId = 0,
+                    ProductName = medipimProduct.Name.GetValueOrDefault("fr") ?? medipimProduct.Name.GetValueOrDefault("en"),
+                    ProductQuantity = ext.Quantity,
+                    ProductPrice = price,
+                    TotalAmount = price * ext.Quantity,
+                    ProductTaxValue = 0,
+                    ProductTaxAmount = 0,
+                    ProductIcon = photo,
+                    SalePrice = price
+                });
             }
 
-            await _dbContext.SaveChangesAsync();
+            return Ok(combined);
+        }
 
-            return Ok(new APIResponse
-            {
-                StatusCode = System.Net.HttpStatusCode.OK,
-                Status = "Success",
-                Message = "Medipim product added to cart."
-            });
+        [HttpDelete("ClearMedipimCart/{patientId}")]
+        public IActionResult ClearMedipimCart(Guid patientId)
+        {
+            var sessionKey = $"external-cart-{patientId}";
+            HttpContext.Session.Remove(sessionKey);
+            return Ok();
         }
 
 

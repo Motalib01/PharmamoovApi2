@@ -170,5 +170,8 @@ namespace PharmaMoov.API.Controllers
                 return Ok(CartRepo.ValidateCartItems(_shop, _address, _dType));
             }
         }
+
     }
+
+
 }

@@ -282,10 +282,13 @@ namespace PharmaMoov.API
 
 			services.AddMvc(options => options.EnableEndpointRouting = false);
 			services.AddMvc().AddNewtonsoftJson();
-		}
+            services.AddSession();
+            
 
-		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-		public void Configure(IApplicationBuilder app, IWebHostEnvironment env, APIDBContext db)
+}
+
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, APIDBContext db)
 		{
 
 			bool enablieDBRowsing = false;
@@ -320,10 +323,10 @@ namespace PharmaMoov.API
 			db.Database.EnsureCreated();
 
 			app.UseAuthentication();
+            app.UseSession();
 
-            
 
-//---------------------------------
+            //---------------------------------
             //app.UseFileServer(new FileServerOptions
             //{
             //	FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "Resources")),
