@@ -25,7 +25,7 @@ namespace PharmaMoov.API.Controllers
     {
         IPaymentRepository PaymentRepo { get; }
         readonly APIDBContext _context;
-        ILoggerManager LogManager { get;}
+        ILoggerManager LogManager { get; }
         IMainHttpClient MainHttpClient { get; }
         APIConfigurationManager MConf { get; }
 
@@ -328,87 +328,89 @@ namespace PharmaMoov.API.Controllers
         //        });
         //    }
         //}
-        [HttpPost("CreateCheckoutSession")]
-        [AllowAnonymous]
-        public IActionResult CreateCheckoutSession([FromBody] StripeCheckoutRequest model)
-        {
-            try
-            {
-                if (model == null || model.CartItems == null || !model.CartItems.Any())
-                {
-                    return BadRequest(new APIResponse
-                    {
-                        StatusCode = System.Net.HttpStatusCode.BadRequest,
-                        Message = "Le panier est vide ou invalide."
-                    });
-                }
 
-                var productIds = model.CartItems.Select(ci => ci.ProductRecordId).ToList();
 
-                // 🟢 Fetch product prices and names from DB
-                var products = _context.Products
-                    .Where(p => productIds.Contains(p.ProductRecordId))
-                    .ToDictionary(
-                        p => p.ProductRecordId,
-                        p => (Price: p.SalePrice > 0 ? p.SalePrice : p.ProductPrice, Name: p.ProductName)
-                    );
+        //[HttpPost("CreateCheckoutSession")]
+        //[AllowAnonymous]
+        //public IActionResult CreateCheckoutSession([FromBody] StripeCheckoutRequest model)
+        //{
+        //    try
+        //    {
+        //        if (model == null || model.CartItems == null || !model.CartItems.Any())
+        //        {
+        //            return BadRequest(new APIResponse
+        //            {
+        //                StatusCode = System.Net.HttpStatusCode.BadRequest,
+        //                Message = "Le panier est vide ou invalide."
+        //            });
+        //        }
 
-                var lineItems = new List<SessionLineItemOptions>();
+        //        var productIds = model.CartItems.Select(ci => ci.ProductRecordId).ToList();
 
-                foreach (var item in model.CartItems)
-                {
-                    if (!products.TryGetValue(item.ProductRecordId, out var productInfo))
-                    {
-                        return BadRequest(new APIResponse
-                        {
-                            StatusCode = System.Net.HttpStatusCode.BadRequest,
-                            Message = $"Le produit avec l'ID {item.ProductRecordId} est introuvable."
-                        });
-                    }
+        //        // 🟢 Fetch product prices and names from DB
+        //        var products = _context.Products
+        //            .Where(p => productIds.Contains(p.ProductRecordId))
+        //            .ToDictionary(
+        //                p => p.ProductRecordId,
+        //                p => (Price: p.SalePrice > 0 ? p.SalePrice : p.ProductPrice, Name: p.ProductName)
+        //            );
 
-                    lineItems.Add(new SessionLineItemOptions
-                    {
-                        PriceData = new SessionLineItemPriceDataOptions
-                        {
-                            UnitAmount = (long)(productInfo.Price * 100), // Stripe expects amount in cents
-                            Currency = "eur",
-                            ProductData = new SessionLineItemPriceDataProductDataOptions
-                            {
-                                Name = productInfo.Name
-                            }
-                        },
-                        Quantity = (long)item.ProductQuantity
-                    });
-                }
+        //        var lineItems = new List<SessionLineItemOptions>();
 
-                var options = new SessionCreateOptions
-                {
-                    PaymentMethodTypes = new List<string> { "card" },
-                    LineItems = lineItems,
-                    Mode = "payment",
-                    SuccessUrl = _configuration["Stripe:SuccessUrl"] + "?session_id={CHECKOUT_SESSION_ID}",
-                    CancelUrl = _configuration["Stripe:CancelUrl"]
-                };
+        //        foreach (var item in model.CartItems)
+        //        {
+        //            if (!products.TryGetValue(item.ProductRecordId, out var productInfo))
+        //            {
+        //                return BadRequest(new APIResponse
+        //                {
+        //                    StatusCode = System.Net.HttpStatusCode.BadRequest,
+        //                    Message = $"Le produit avec l'ID {item.ProductRecordId} est introuvable."
+        //                });
+        //            }
 
-                var service = new SessionService();
-                var session = service.Create(options);
+        //            lineItems.Add(new SessionLineItemOptions
+        //            {
+        //                PriceData = new SessionLineItemPriceDataOptions
+        //                {
+        //                    UnitAmount = (long)(productInfo.Price * 100), // Stripe expects amount in cents
+        //                    Currency = "eur",
+        //                    ProductData = new SessionLineItemPriceDataProductDataOptions
+        //                    {
+        //                        Name = productInfo.Name
+        //                    }
+        //                },
+        //                Quantity = (long)item.ProductQuantity
+        //            });
+        //        }
 
-                return Ok(new APIResponse
-                {
-                    StatusCode = System.Net.HttpStatusCode.OK,
-                    Payload = session.Url
-                });
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError("Stripe Checkout Session Error: " + ex.Message);
-                return BadRequest(new APIResponse
-                {
-                    StatusCode = System.Net.HttpStatusCode.BadRequest,
-                    Message = "Erreur lors de la création de la session Stripe."
-                });
-            }
-        }
+        //        var options = new SessionCreateOptions
+        //        {
+        //            PaymentMethodTypes = new List<string> { "card" },
+        //            LineItems = lineItems,
+        //            Mode = "payment",
+        //            SuccessUrl = _configuration["Stripe:SuccessUrl"] + "?session_id={CHECKOUT_SESSION_ID}",
+        //            CancelUrl = _configuration["Stripe:CancelUrl"]
+        //        };
+
+        //        var service = new SessionService();
+        //        var session = service.Create(options);
+
+        //        return Ok(new APIResponse
+        //        {
+        //            StatusCode = System.Net.HttpStatusCode.OK,
+        //            Payload = session.Url
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        LogManager.LogError("Stripe Checkout Session Error: " + ex.Message);
+        //        return BadRequest(new APIResponse
+        //        {
+        //            StatusCode = System.Net.HttpStatusCode.BadRequest,
+        //            Message = "Erreur lors de la création de la session Stripe."
+        //        });
+        //    }
+        //}
 
     }
 }

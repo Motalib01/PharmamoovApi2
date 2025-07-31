@@ -20,6 +20,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using PharmaMoov.API.Services.Abstractions;
+using PharmaMoov.API.Services.Payment;
 
 namespace PharmaMoov.API
 {
@@ -221,11 +222,13 @@ namespace PharmaMoov.API
 				configureOptions.TokenValidationParameters = tokenValidationParameters;
 				configureOptions.SaveToken = true;
 			});
-			#endregion
 
-			#region "Hosted Services"
 
-			services.AddSingleton<IPaymentBackgroundProcess, PaymentBackgroundProcess>();
+            #endregion
+
+            #region "Hosted Services"
+
+            services.AddSingleton<IPaymentBackgroundProcess, PaymentBackgroundProcess>();
 			services.AddSingleton<IPaymentDeliveryBackgroundProcess, PaymentDeliveryBackgroundProcess>();
 
 			if (masterConfig.HostedServicesConfig.EnabledAutomaticTransfer == true &&
@@ -283,7 +286,27 @@ namespace PharmaMoov.API
 			services.AddMvc(options => options.EnableEndpointRouting = false);
 			services.AddMvc().AddNewtonsoftJson();
             services.AddSession();
-            
+
+            // Stripe API Key (already added correctly earlier)
+            Stripe.StripeConfiguration.ApiKey = Configuration["Stripe:SecretKey"];
+
+            // Stripe payment service
+            services.AddScoped<IPaymentService, StripePaymentService>();
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend",
+                    builder =>
+                    {
+                        builder.WithOrigins("http://localhost:63523") 
+                            .AllowAnyHeader()
+                            .AllowAnyMethod()
+                            .AllowCredentials();
+                    });
+            });
+
+
+
 
 }
 
@@ -322,8 +345,12 @@ namespace PharmaMoov.API
 
 			db.Database.EnsureCreated();
 
-			app.UseAuthentication();
+            app.UseCors("AllowFrontend");
+            app.UseAuthentication();
             app.UseSession();
+
+            app.UseAuthorization();
+
 
 
             //---------------------------------
