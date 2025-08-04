@@ -81,9 +81,10 @@ namespace PharmaMoov.API.Services.Abstractions
         public async Task<List<MedipimProductDto>> GetProductsByFrenchCategoryAsync(string frenchName, int page = 0, int size = 100)
         {
             var categories = await GetPublicCategoriesAsync();
+            string nameFr = string.Empty; // Initialize it with a default value
 
             var category = categories.FirstOrDefault(c =>
-                c.Name?.TryGetValue("fr", out var nameFr) == true &&
+                c.Name?.TryGetValue("fr", out nameFr) == true &&
                 string.Equals(nameFr, frenchName, StringComparison.OrdinalIgnoreCase));
 
             if (category == null)
