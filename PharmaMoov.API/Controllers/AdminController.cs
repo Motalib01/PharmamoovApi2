@@ -24,7 +24,7 @@ namespace PharmaMoov.API.Controllers
             MainHttpClient = _mhttpc;
             MConf = _conf;
         }
-
+        [AllowAnonymous]
         [HttpPost("RegisterAdmin")]
         public IActionResult RegisterAdmin([FromBody] AdminProfile _admin)
         {
